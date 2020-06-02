@@ -41,13 +41,7 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textField;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textSize;
 
-public class MainActivity extends AppCompatActivity implements
-        OnMapReadyCallback, PermissionsListener {
-
-    private static final String SOURCE_ID = "SOURCE_ID";
-    private static final String LAYER_ID = "LAYER_ID";
-
-    List<Feature> clickedHeightMarkers = new ArrayList<>();
+public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, PermissionsListener {
 
     private PermissionsManager permissionsManager;
     private MapView mapView;
@@ -77,7 +71,6 @@ public class MainActivity extends AppCompatActivity implements
         mapView = findViewById(R.id.mapView);
         mapView.onCreate(savedInstanceState);
         mapView.getMapAsync(this);
-
     }
 
     @Override
@@ -141,19 +134,18 @@ public class MainActivity extends AppCompatActivity implements
                     String strFileContents = "";
                     while ((bytesRead = in.read(contents)) != -1) {
                         strFileContents += new String(contents, 0, bytesRead);
-
                     }
-
 
                     String elevation = strFileContents.substring(strFileContents.indexOf('[') + 1, strFileContents.indexOf(']'));
 
                     runOnUiThread(() -> {
 
                         long timestamp = System.currentTimeMillis();
-                        mapboxMap.getStyle().addSource(new GeoJsonSource(SOURCE_ID + timestamp, Feature.fromGeometry(Point.fromLngLat(lng, lat))));
-                        /* Style layer: A style layer ties together the source and image and specifies how they are displayed on the map. */
+                        String sourceID = "SOURCE_ID_" + timestamp;
+                        String layerID = "LAYER_ID_" + timestamp;
 
-                        mapboxMap.getStyle().addLayer(new SymbolLayer(LAYER_ID + timestamp, SOURCE_ID + timestamp)
+                        mapboxMap.getStyle().addSource(new GeoJsonSource(sourceID, Feature.fromGeometry(Point.fromLngLat(lng, lat))));
+                        mapboxMap.getStyle().addLayer(new SymbolLayer(layerID, sourceID)
                                 .withProperties(
                                         textField(elevation + "m"),
                                         textAllowOverlap(true),
