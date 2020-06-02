@@ -29,12 +29,19 @@ import com.mapbox.mapboxsdk.style.layers.SymbolLayer;
 import com.mapbox.mapboxsdk.style.sources.GeoJsonSource;
 
 import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
+import java.net.MalformedURLException;
 import java.net.URL;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.stream.Collectors;
+
+import javax.net.ssl.HttpsURLConnection;
 
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textAllowOverlap;
 import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textColor;
@@ -58,7 +65,6 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
         Mapbox.getInstance(this, getString(R.string.access_token));
         setContentView(R.layout.activity_main);
-
 
         textLocationInfo = findViewById(R.id.textLocationInfo);
 
@@ -96,66 +102,64 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         });
 
         mapboxMap.addOnMapClickListener(point -> {
-                getElevationFromOnlineApi(point.getLatitude(), point.getLongitude());
-                return false;
-            });
+            getElevationFromOnlineApi(point.getLatitude(), point.getLongitude());
+            return false;
+        });
     }
 
-
-
-
     private void getElevationFromOnlineApi(@NonNull double lat, double lng) {
-
-        String urlRequest = String.format(ELEVATION_REQUEST_STRING, lat, lng);
-
         new Thread(() -> {
-            URL url = null;
+            String urlRequest = String.format(ELEVATION_REQUEST_STRING, lat, lng);
+
             try {
-                url = new URL(urlRequest);
-                HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
-                try {
-                    InputStream in = new BufferedInputStream(urlConnection.getInputStream());
+                String rawResponse = getResponseFromUrlRequest(urlRequest);
+                String elevation = parseElevationFromResponse(rawResponse);
+                displayElevationOnMap(lat, lng, elevation);
 
-                    byte[] contents = new byte[1024];
-
-                    int bytesRead = 0;
-                    String strFileContents = "";
-                    while ((bytesRead = in.read(contents)) != -1) {
-                        strFileContents += new String(contents, 0, bytesRead);
-                    }
-
-                    String elevation = strFileContents.substring(strFileContents.indexOf('[') + 1, strFileContents.indexOf(']'));
-
-                    runOnUiThread(() -> {
-
-                        long timestamp = System.currentTimeMillis();
-                        String sourceID = "SOURCE_ID_" + timestamp;
-                        String layerID = "LAYER_ID_" + timestamp;
-
-                        mapboxMap.getStyle().addSource(new GeoJsonSource(sourceID, Feature.fromGeometry(Point.fromLngLat(lng, lat))));
-                        mapboxMap.getStyle().addLayer(new SymbolLayer(layerID, sourceID)
-                                .withProperties(
-                                        textField(elevation + "m"),
-                                        textAllowOverlap(true),
-                                        textSize(18f),
-                                        textColor(Color.RED)
-                                ));
-
-                    });
-
-                } finally {
-                    urlConnection.disconnect();
-                }
             } catch (IOException e) {
                 e.printStackTrace();
                 runOnUiThread(() -> {
                     Toast.makeText(MainActivity.this, "Error getting data: " + e.getMessage(), Toast.LENGTH_LONG).show();
                 });
             }
-
         }).start();
+    }
 
+    private String getResponseFromUrlRequest(String urlRequest) throws IOException {
 
+        URL url = new URL(urlRequest);
+        HttpURLConnection urlConnection = (HttpURLConnection) url.openConnection();
+
+        try {
+            InputStreamReader inputStreamReader = new InputStreamReader(urlConnection.getInputStream(), StandardCharsets.UTF_8);
+            return new BufferedReader(inputStreamReader)
+                    .lines() // Alle Zeilen lesen
+                    .collect(Collectors.joining()); // und verbinden in einen String
+        } finally {
+            urlConnection.disconnect();
+        }
+    }
+
+    private String parseElevationFromResponse(String rawResponse) {
+        return rawResponse.substring(rawResponse.indexOf('[') + 1, rawResponse.indexOf(']'));
+    }
+
+    private void displayElevationOnMap(double lat, double lng, String elevation) {
+        runOnUiThread(() -> {
+
+            long timestamp = System.currentTimeMillis();
+            String sourceID = "SOURCE_ID_" + timestamp;
+            String layerID = "LAYER_ID_" + timestamp;
+
+            mapboxMap.getStyle().addSource(new GeoJsonSource(sourceID, Feature.fromGeometry(Point.fromLngLat(lng, lat))));
+            mapboxMap.getStyle().addLayer(new SymbolLayer(layerID, sourceID)
+                    .withProperties(
+                            textField(elevation + "m"),
+                            textAllowOverlap(true),
+                            textSize(18f),
+                            textColor(Color.RED)
+                    ));
+        });
     }
 
     @SuppressWarnings({"MissingPermission"})
