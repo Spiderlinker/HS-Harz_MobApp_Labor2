@@ -85,33 +85,20 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
             public void onStyleLoaded(@NonNull Style style) {
                 enableLocationComponent(style);
 
-
-
                 if (locationComponent.getLastKnownLocation() != null) {
                     Location location = locationComponent.getLastKnownLocation();
                     textLocationInfo.setText("Latitude/Longitude: " //
                             + "\n Breitengrad: " + location.getLatitude() + "°" //
                             + "\n Längengrad: " + location.getLongitude() + "°" //
                             + "\n Genauigkeit: " + location.getAccuracy() + "m");
-
-                    getElevationFromOnlineApi(location.getLatitude(), location.getLongitude());
-
                 }
             }
         });
 
-        mapboxMap.addOnMapClickListener(new MapboxMap.OnMapClickListener() {
-            @Override
-            public boolean onMapClick(@NonNull LatLng point) {
-
-
-                System.out.println("Height at point: " + point);
+        mapboxMap.addOnMapClickListener(point -> {
                 getElevationFromOnlineApi(point.getLatitude(), point.getLongitude());
-
-
                 return false;
-            }
-        });
+            });
     }
 
 
