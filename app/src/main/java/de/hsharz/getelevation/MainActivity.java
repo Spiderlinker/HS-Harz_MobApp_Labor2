@@ -43,6 +43,8 @@ import static com.mapbox.mapboxsdk.style.layers.PropertyFactory.textSize;
 
 public class MainActivity extends AppCompatActivity implements OnMapReadyCallback, PermissionsListener {
 
+    private static final String ELEVATION_REQUEST_STRING = "https://api.airmap.com/elevation/v1/ele/?points=%f,%f";
+
     private PermissionsManager permissionsManager;
     private MapView mapView;
     private MapboxMap mapboxMap;
@@ -117,8 +119,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
 
     private void getElevationFromOnlineApi(@NonNull double lat, double lng) {
 
-
-        String urlRequest = "https://api.airmap.com/elevation/v1/ele/?points=" + lat + "," + lng;
+        String urlRequest = String.format(ELEVATION_REQUEST_STRING, lat, lng);
 
         new Thread(() -> {
             URL url = null;
