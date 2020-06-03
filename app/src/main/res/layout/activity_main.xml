@@ -15,11 +15,11 @@
         android:id="@+id/btnSetToCurrentLocation"
         android:layout_width="wrap_content"
         android:layout_height="wrap_content"
-        android:layout_gravity="bottom|right"
+        android:layout_gravity="bottom|end"
         android:layout_margin="8dp"
         android:background="@color/colorPrimary"
         android:padding="8dp"
-        android:text="Wo bin ich?"
+        android:text="@string/where_am_i"
         android:textColor="@android:color/white" />
 
     <RelativeLayout
