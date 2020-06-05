@@ -49,7 +49,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      */
     private static final String ELEVATION_REQUEST_STRING = "https://api.airmap.com/elevation/v1/ele/?points=%f,%f";
 
-    // ---- Komponenten aus xml
+    // Komponenten aus xml
     private MapView mapView;
     private MapboxMap mapboxMap;
     private TextView textLocationInfo;
@@ -62,7 +62,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
 
-        // MapBox initalisieren
+        // MapBox initalisieren mit API-Key
         Mapbox.getInstance(this, getString(R.string.access_token));
         // Activity mit xml-Datei verknüpfen
         setContentView(R.layout.activity_main);
@@ -116,7 +116,7 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
         // Für den angetippten Punkt soll die Höhe geholt werden
         // und auf der Karte angezeigt werden
         mapboxMap.addOnMapClickListener(point -> {
-            getElevationFromOnlineApi(point.getLatitude(), point.getLongitude());
+            updateElevationInformation(point.getLatitude(), point.getLongitude());
             return true;
         });
     }
@@ -154,19 +154,22 @@ public class MainActivity extends AppCompatActivity implements OnMapReadyCallbac
      * @param lat Breitengrad des Punktes, dessen Höhe ermittelt werden soll
      * @param lng Längengrad der Punktes, dessen Höhe ermittelt werden soll
      */
-    private void getElevationFromOnlineApi(double lat, double lng) {
+    private void updateElevationInformation(double lat, double lng) {
+        /*
+         *  Die Abfrage für die Höhe findet in einem neuen Thread statt.
+         *  Falls die Abfrage im Hauptthread stattfinden würde, dann würde
+         *  die App bis zur Antwort des Servers halten. Damit die App weiterhin
+         *  responsive ist, wird dies im neuen Thread ausgeführt.
+         *  Zudem wird es von Android gefordert (ohne den Strict-Mode zu aktivieren)
+         */
         new Thread(() -> {
             // Anfrage vorbereiten
             String urlRequest = String.format(Locale.getDefault(), ELEVATION_REQUEST_STRING, lat, lng);
 
             try {
-                // Antwort von Server holen
-                String rawResponse = getResponseFromUrlRequest(urlRequest);
-                // Antwort parsen und Höhe extrahieren
-                String elevation = parseElevationFromResponse(rawResponse);
-                // Höhe auf Karte darstellen
-                displayElevationOnMap(lat, lng, elevation);
-
+                String rawResponse = getResponseFromUrlRequest(urlRequest); // Antwort von Server holen
+                String elevation = parseElevationFromResponse(rawResponse); // Antwort parsen und Höhe extrahieren
+                displayElevationOnMap(lat, lng, elevation); // Höhe auf Karte darstellen
             } catch (IOException e) {
                 e.printStackTrace();
                 // Ein Fehler ist aufgetreten, keine Internetverbindung?
